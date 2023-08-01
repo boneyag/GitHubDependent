@@ -24,9 +24,11 @@ def scrape_dependents():
 
     # for lib in lib_git_repos:
     count = 0
+    req_count = 0
     # change the lib accordingly
-    lib = 'matplotlib/matplotlib'
-    lib_dep_url = f"https://github.com/{lib}/network/dependents"
+    lib = 'tensorflow/tensorflow'
+    # lib_dep_url = f"https://github.com/{lib}/network/dependents"
+    lib_dep_url = f"https://github.com/{lib}/network/dependents?dependents_after=MTM2MjQ2ODUwNzI"
 
     while lib_dep_url:
         logging.info(f"GET {lib_dep_url}")
@@ -44,20 +46,24 @@ def scrape_dependents():
             logging.info(f"Number of repos collected: {count}")
 
             try:
-                with open('repo_list_mpl.txt', 'a+') as f:
+                with open('repo_list_tf.txt', 'a+') as f:
                     f.write('\n'.join(str(item)[1:] for item in repo_list))
                     repo_list.clear()
+                    req_count += 1
             except IOError as e:
                 logging.error(f"Could not write to repo_list. {e}")
 
             nav_content = soup.find("div", "paginate-container")
-            nav_anchor = nav_content.find_all("a")
-            for nav in nav_anchor:
-                if nav.string == "Next":
-                    lib_dep_url = nav["href"]
-                    time.sleep(30)
-                else:
-                    lib_dep_url = None
+            if nav_content:
+                nav_anchor = nav_content.find_all("a")
+                for nav in nav_anchor:
+                    if nav.string == "Next":
+                        lib_dep_url = nav["href"]
+                        if req_count % 10 == 0:
+                            time.sleep(30)
+                    else:
+                        lib_dep_url = None
+
 
         else:
             logging.error(r.raise_for_status())
