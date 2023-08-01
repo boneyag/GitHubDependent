@@ -1,5 +1,6 @@
 from gh_support import analyze_patterns
 from github import Github
+from github import GithubException
 
 from datetime import datetime
 import time
@@ -9,6 +10,19 @@ import os
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
+
+
+def get_repository(repo_name, access_token):
+    g = Github(access_token)
+    try:
+        repo = g.get_repo(repo_name)
+        return repo
+    except GithubException as ex:
+        if ex.status == 404:
+            print(f"Repository '{repo_name}' not found.")
+        else:
+            print(f"An error occurred: {ex}")
+        return None
 
 
 def filter_repos():
@@ -74,7 +88,11 @@ def filter_repos():
 
                 time.sleep(delta)
 
-            repo = gh.get_repo(repo_name)
+            # discard repo not available
+            repo = get_repository(repo_name, config["gh_auth_token"])
+            if not repo:
+                disc_repos.add(repo_name)
+                continue
 
             # not archived
             if repo.archived:
